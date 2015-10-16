@@ -1,20 +1,22 @@
-package com.pkinsky
+package org.shkr.akka.stream.wordcount
 
 import akka.actor.ActorSystem
-import akka.stream.scaladsl._
 import akka.stream._
-import scala.language.postfixOps
+import akka.stream.scaladsl._
+import Messages._
 import scala.concurrent.duration._
-import scala.concurrent.Future
-
+import scala.concurrent.{ExecutionContext, Future}
+import scala.language.postfixOps
 
 object Main {
-  implicit val as = ActorSystem()
-  implicit val ec = as.dispatcher
-  val settings = ActorFlowMaterializerSettings(as)
-  implicit val mat = ActorFlowMaterializer(settings)
 
-  val redditAPIRate = 500 millis
+  implicit val actorSystem: ActorSystem = ActorSystem()
+  implicit val executionContext: ExecutionContext = actorSystem.dispatcher
+  val settings: ActorMaterializerSettings = ActorMaterializerSettings(actorSystem)
+  implicit val actorMetrializer: Materializer = ActorMaterializer(settings)
+
+  val redditAPIRate = 50 millis
+  val parallelism: Int = 5
 
   /**
     builds the following stream-processing graph.
@@ -40,15 +42,15 @@ object Main {
   val fetchLinks: Flow[String, Link, Unit] =
     Flow[String]
         .via(throttle(redditAPIRate))
-        .mapAsyncUnordered( subreddit => RedditAPI.popularLinks(subreddit) )
-        .mapConcat( listing => listing.links )
+        .mapAsyncUnordered(parallelism)(subreddit => RedditAPI.popularLinks(subreddit))
+        .mapConcat(listing => listing.links)
 
 
   val fetchComments: Flow[Link, Comment, Unit] =
     Flow[Link]
         .via(throttle(redditAPIRate))
-        .mapAsyncUnordered( link => RedditAPI.popularComments(link) )
-        .mapConcat( listing => listing.comments )
+        .mapAsyncUnordered(parallelism)(link => RedditAPI.popularComments(link))
+        .mapConcat(listing => listing.comments)
 
   val wordCountSink: Sink[Comment, Future[Map[String, WordCount]]] =
     Sink.fold(Map.empty[String, WordCount])(
@@ -57,6 +59,7 @@ object Main {
     )
 
 def main(args: Array[String]): Unit = {
+
     // 0) Create a Flow of String names, using either
     //    the argument vector or the result of an API call.
     val subreddits: Source[String, Unit] =
@@ -73,6 +76,6 @@ def main(args: Array[String]): Unit = {
 
     res.onComplete(writeResults)
 
-    as.awaitTermination()
+    actorSystem.awaitTermination()
   }
 }

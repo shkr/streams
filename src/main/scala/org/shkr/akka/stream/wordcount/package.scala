@@ -1,22 +1,16 @@
-package com
+package org.shkr.akka.stream
 
-import scala.concurrent.duration._
-import scala.concurrent._
-import scala.util.{Success, Failure, Try}
-import scala.collection.immutable._
-import akka.stream._
-import akka.stream._
-import akka.actor._
-import akka.stream.actor._
-import scalaz._
-import Scalaz._
 import java.io.File
-import java.nio.file.{Paths, Files}
-import org.reactivestreams.Subscriber
 import java.nio.charset.StandardCharsets
+import java.nio.file.{Files, Paths}
+import akka.actor._
+import scala.collection.immutable._
+import scala.concurrent._
+import scala.util.{Failure, Success, Try}
+import scalaz.Scalaz._
 
 
-package object pkinsky {
+package object wordcount {
 
   private val tZero = System.currentTimeMillis()
 
