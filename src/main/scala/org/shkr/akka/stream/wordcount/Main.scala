@@ -10,6 +10,8 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.language.postfixOps
 import RedditAPI._
 
+import scala.util.{Failure, Success}
+
 object Main {
 
   implicit val actorSystem: ActorSystem = ActorSystem()
@@ -78,10 +80,16 @@ def main(args: Array[String]): Unit = {
 
     res.onComplete(f => {
         writeResults(f)
-        Http().shutdownAllConnectionPools().onComplete{ _ =>
-          actorSystem.shutdown()
-        }
-      }
-    )
+        Http().shutdownAllConnectionPools().onComplete({
+          case Success(_) => {
+            printlnC("Successfuly shutdown Http")
+            actorSystem.shutdown()
+          }
+          case Failure(_) => {
+            printlnE("Failed in properly shutting down Http")
+            actorSystem.shutdown()
+          }
+        })
+    })
   }
 }

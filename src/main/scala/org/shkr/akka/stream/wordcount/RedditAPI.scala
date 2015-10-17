@@ -17,7 +17,7 @@ object RedditAPI {
   val subredditsToFetch = 5
   val commentsToFetch = 2000
   val commentDepth = 25
-  val timeout = 2000.millis
+  val timeout = 5000.millis
   val userAgent: HttpHeader = headers.`User-Agent`("akka-http")
 
   def popularLinksRequest(subreddit: String): HttpRequest={
@@ -42,14 +42,14 @@ object RedditAPI {
 
 
   def popularComments(link: Link): Future[CommentListing] = withRetry(timedFuture(s"comments: r/${link.subreddit}/${link.id}/comments"){Http().singleRequest(popularCommentRequest(link)).flatMap[CommentListing]{
-    case response => response.entity.toStrict(2*timeout).map[CommentListing](entity => {
+    case response => response.entity.toStrict(timeout).map[CommentListing](entity => {
       CommentListing(link.subreddit, (Json.parse(entity.data.decodeString("UTF-8")) \\ "body").map(_.as[String]).toList
           .map(commentStr => new Comment(link.subreddit, commentStr)))
     })
   }}, CommentListing(link.subreddit, Seq.empty))
 
   def popularSubreddits: Future[List[String]] = timedFuture("fetch popular subreddits"){Http().singleRequest(popularSubredditsRequest).flatMap[List[String]]{
-    case response => response.entity.toStrict(2*timeout).map[List[String]](entity => {
+    case response => response.entity.toStrict(timeout).map[List[String]](entity => {
       (Json.parse(entity.data.decodeString("UTF-8")) \\ "url").map(_.as[String]).toList
         .map(subreddit => subreddit.drop(3).dropRight(1).mkString)
     })

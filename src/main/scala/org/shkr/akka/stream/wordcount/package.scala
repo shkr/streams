@@ -3,12 +3,10 @@ package org.shkr.akka.stream
 import java.io.File
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Paths}
-import akka.actor._
 import scala.collection.immutable._
 import scala.concurrent._
 import scala.util.{Failure, Success, Try}
 import scalaz.Scalaz._
-
 
 package object wordcount {
 
@@ -30,9 +28,9 @@ package object wordcount {
     }
   }
 
-  def withRetry[T](f: => Future[T], onFail: T, n: Int = 3)(implicit ec: ExecutionContext): Future[T] = 
+  def withRetry[T](f: => Future[T], onFail: T, n: Int = 3)(implicit ec: ExecutionContext): Future[T] =
     if (n > 0){ f.recoverWith{ case err: Exception => 
-      printlnE(s"future failed with $err, retrying")
+      printlnE(s"future attempt $n/3 failed with $err, retrying")
       withRetry(f, onFail, n - 1)
     }} else{
       printlnE(s"WARNING: failed to run future, substituting $onFail")
@@ -54,7 +52,7 @@ package object wordcount {
 
   def mergeWordCounts(a: Map[String, WordCount], b: Map[String, WordCount]) = a |+| b
 
-  def writeResults(wordcounts: Try[Map[String, WordCount]])(implicit as: ActorSystem) = wordcounts match {
+  def writeResults(tryWordcounts: Try[Map[String, WordCount]]) = tryWordcounts match {
     case Success(wordcounts) =>
       clearOutputDir()
       wordcounts.foreach{ case (key, wordcount) =>
@@ -65,10 +63,8 @@ package object wordcount {
         writeTsv(fname, wordcount)
         printlnC(s"${wordcount.size} distinct words and ${wordcount.values.sum} total words for $key")
       }
-      as.shutdown()
 
     case Failure(f) => 
       printlnE(s"failed with $f")
-      as.shutdown()
   }
 }
