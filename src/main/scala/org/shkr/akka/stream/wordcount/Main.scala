@@ -1,12 +1,14 @@
 package org.shkr.akka.stream.wordcount
 
 import akka.actor.ActorSystem
+import akka.http.scaladsl.Http
 import akka.stream._
 import akka.stream.scaladsl._
 import Messages._
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.postfixOps
+import RedditAPI._
 
 object Main {
 
@@ -15,7 +17,7 @@ object Main {
   val settings: ActorMaterializerSettings = ActorMaterializerSettings(actorSystem)
   implicit val actorMetrializer: Materializer = ActorMaterializer(settings)
 
-  val redditAPIRate = 50 millis
+  val redditAPIRate = 500 millis
   val parallelism: Int = 5
 
   /**
@@ -42,14 +44,14 @@ object Main {
   val fetchLinks: Flow[String, Link, Unit] =
     Flow[String]
         .via(throttle(redditAPIRate))
-        .mapAsyncUnordered(parallelism)(subreddit => RedditAPI.popularLinks(subreddit))
+        .mapAsyncUnordered(parallelism)(subreddit => popularLinks(subreddit))
         .mapConcat(listing => listing.links)
 
 
   val fetchComments: Flow[Link, Comment, Unit] =
     Flow[Link]
         .via(throttle(redditAPIRate))
-        .mapAsyncUnordered(parallelism)(link => RedditAPI.popularComments(link))
+        .mapAsyncUnordered(parallelism)(link => popularComments(link))
         .mapConcat(listing => listing.comments)
 
   val wordCountSink: Sink[Comment, Future[Map[String, WordCount]]] =
@@ -64,7 +66,7 @@ def main(args: Array[String]): Unit = {
     //    the argument vector or the result of an API call.
     val subreddits: Source[String, Unit] =
       if (args.isEmpty)
-        Source(RedditAPI.popularSubreddits).mapConcat(identity)
+        Source(popularSubreddits).mapConcat(identity)
       else
         Source(args.toVector)
   
@@ -74,8 +76,12 @@ def main(args: Array[String]): Unit = {
       .via(fetchComments)
       .runWith(wordCountSink)
 
-    res.onComplete(writeResults)
-
-    actorSystem.awaitTermination()
+    res.onComplete(f => {
+        writeResults(f)
+        Http().shutdownAllConnectionPools().onComplete{ _ =>
+          actorSystem.shutdown()
+        }
+      }
+    )
   }
 }
