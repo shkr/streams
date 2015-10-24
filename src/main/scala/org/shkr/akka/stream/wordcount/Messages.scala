@@ -5,13 +5,10 @@ package org.shkr.akka.stream.wordcount
  */
 object Messages {
 
-  case class LinkListing(links: scala.collection.immutable.Seq[Link])
-
   case class Link(id: String, subreddit: String)
 
-  case class CommentListing(subreddit: String, comments: scala.collection.immutable.Seq[Comment])
-
   case class Comment(subreddit: String, body: String){
+
     val alpha = (('a' to 'z') ++ ('A' to 'Z')).toSet
 
     def normalize(s: Seq[String]): Seq[String] =

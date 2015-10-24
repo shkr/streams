@@ -28,14 +28,15 @@ package object wordcount {
     }
   }
 
-  def withRetry[T](f: => Future[T], onFail: T, n: Int = 3)(implicit ec: ExecutionContext): Future[T] =
-    if (n > 0){ f.recoverWith{ case err: Exception => 
+  def withRetry[T](f: => Future[T], onFail: T, n: Int = 3)
+                  (implicit ec: ExecutionContext): Future[T] = n match {
+    case nonZero if nonZero>0 => f.recoverWith{ case err: Exception =>
       printlnE(s"future attempt $n/3 failed with $err, retrying")
       withRetry(f, onFail, n - 1)
-    }} else{
-      printlnE(s"WARNING: failed to run future, substituting $onFail")
-      Future.successful(onFail)
     }
+    case zero => printlnE(s"WARNING: failed to run future, substituting $onFail")
+      Future.successful(onFail)
+  }
 
   def writeTsv(fname: String, wordcount: WordCount) = {
     val tsv = wordcount.toList.sortBy{ case (_, n) => n }.reverse.map{ case (s, n) => s"$s\t$n"}.mkString("\n")
