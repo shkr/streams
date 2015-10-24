@@ -20,7 +20,7 @@ Note : this project uses the `akka.cluster.ClusterActorRefProvider` as the defau
   * A simple word count example
 
 ```
-> sbt "runMain org.shkr.akka.stream.wordcount.Main"
+> sbt "runMain org.shkr.akka.stream.wordcount.RedditFlow"
  
 ```
 
