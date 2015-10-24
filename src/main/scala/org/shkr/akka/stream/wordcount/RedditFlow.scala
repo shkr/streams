@@ -95,7 +95,6 @@ object RedditFlow {
     val wordCountKeyByReddit: Future[Map[String, WordCount]] = subreddits
       .via(topPosts)
       .via(topComments)
-      .via(throttle(redditAPIRate))
       .runWith(wordCountSink)
 
     wordCountKeyByReddit.onComplete(f => {

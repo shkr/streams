@@ -11,9 +11,6 @@ library for Client access to the Reddit API.
 > sbt compile
 ```
 
-Note : this project uses the `akka.cluster.ClusterActorRefProvider` as the default actor provider.
- 
-
 ### org.shkr.akka.streams.wordcount : Word Count
 ---
 

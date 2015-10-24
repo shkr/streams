@@ -11,6 +11,7 @@ import scalaz.Scalaz._
 package object wordcount {
 
   private val tZero = System.currentTimeMillis()
+  private val dirName = "reddit-wordcount"
 
   def printlnC(s: Any): Unit = println(Console.GREEN + s + Console.RESET)
   def printlnE(s: Any): Unit = println(Console.RED + s + Console.RESET)
@@ -45,7 +46,7 @@ package object wordcount {
 
   def clearOutputDir() =
     for {
-      files <- Option(new File("res").listFiles)
+      files <- Option(new File(dirName).listFiles)
       file <- files if file.getName.endsWith(".tsv")
     } file.delete()
 
@@ -57,9 +58,9 @@ package object wordcount {
     case Success(wordcounts) =>
       clearOutputDir()
       wordcounts.foreach{ case (key, wordcount) =>
-        val fname = s"res/$key.tsv"
+        val fname = s"$dirName/$key.tsv"
         printlnC(s"write wordcount for $key to $fname")
-        val p = Paths.get("res")
+        val p = Paths.get(dirName)
         if (!Files.exists(p)) Files.createDirectory(p)
         writeTsv(fname, wordcount)
         printlnC(s"${wordcount.size} distinct words and ${wordcount.values.sum} total words for $key")
