@@ -1,6 +1,6 @@
 # streams
 
-[API Documentation](http://shkr.github.io/actors)
+[API Documentation](http://shkr.github.io/streams)
 
 A Word Count example using the Reddit API and the akka-stream flows;
 The project is extended from https://github.com/pkinsky/akka-streams-example
