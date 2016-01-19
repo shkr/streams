@@ -65,31 +65,6 @@ object RedditFlow {
         mergeWordCounts(acc, Map(c.subreddit -> c.toWordCount))
     )
 
-  /**
-
-    @define This is the Stream Processing Graph for throttle which unlike
-            other flows uses the [[Zip]] junction. This throttles the
-            Stream by a [[Configuration.redditAPIRate]] ticker
-    +------------+
-    | tickSource +-Unit-+
-    +------------+      +---> +-----+            +-----+      +-----+
-                              | zip +-(T,Unit)-> | map +--T-> | out |
-    +----+              +---> +-----+            +-----+      +-----+
-    | in +----T---------+
-    +----+
-    tickSource emits one element per `rate` time units and zip only emits when an element is present from its left and right
-    input stream, so the resulting stream can never emit more than 1 element per `rate` time units.
-    */
-  def throttle[T](rate: FiniteDuration): Flow[T, T, Unit] = {
-    Flow() { implicit builder =>
-      import akka.stream.scaladsl.FlowGraph.Implicits._
-      val zip = builder.add(Zip[T, Unit.type]())
-      Source(rate, rate, Unit) ~> zip.in1
-      (zip.in0, zip.out)
-    }.map(_._1)
-  }
-
-
   def main(args: Array[String]): Unit={
 
     val wordCountKeyByReddit: Future[Map[String, WordCount]] = subreddits
